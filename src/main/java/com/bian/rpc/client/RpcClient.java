@@ -24,7 +24,7 @@ public class RpcClient {
 			@Override
 			public Object invoke(Object proxy, Method method, Object[] args)
 					throws Throwable {
-				HttpPost post=new HttpPost("localhost:8080/rpc/add");
+				HttpPost post=new HttpPost("http://127.0.0.1:8080/sample-rpc/rpc/add");
 				ByteArrayOutputStream aos=new ByteArrayOutputStream();
 				ObjectOutputStream oos=new ObjectOutputStream(aos);
 				oos.writeUTF(method.getName());
@@ -36,7 +36,7 @@ public class RpcClient {
 				HttpEntity e=null;
 				e=response.getEntity();
 				ObjectInputStream in=new ObjectInputStream(e.getContent());
-				Object result=in.readInt();
+				Object result=in.readObject();
 				if(result instanceof Throwable){
 					throw (Throwable) result;
 				}
