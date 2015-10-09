@@ -21,18 +21,18 @@ import com.bian.rpc.service.impl.RpcAddImpl;
 @RequestMapping("/rpc")
 public class RpcController {
 	
-	@RequestMapping(value="/add",method=RequestMethod.POST)
-	public void RpcAdd(HttpServletRequest request,HttpServletResponse response) throws IOException, ClassNotFoundException{
-		ObjectInputStream ois=new ObjectInputStream(request.getInputStream());
-		String methodName=ois.readUTF();
-		Class<?>[] paramterTypes=(Class<?>[]) ois.readObject();
-		Object[] arguments=(Object[]) ois.readObject();
-		Object o=RpcServer.rpcInvoke(new RpcAddImpl(), methodName, paramterTypes, arguments);
-		ObjectOutputStream oos=new ObjectOutputStream(response.getOutputStream());
-		oos.writeObject(o);
-	}
+//	@RequestMapping(value="/add",method=RequestMethod.POST)
+//	public void RpcAdd(HttpServletRequest request,HttpServletResponse response) throws IOException, ClassNotFoundException{
+//		ObjectInputStream ois=new ObjectInputStream(request.getInputStream());
+//		String methodName=ois.readUTF();
+//		Class<?>[] paramterTypes=(Class<?>[]) ois.readObject();
+//		Object[] arguments=(Object[]) ois.readObject();
+//		Object o=RpcServer.rpcInvoke(new RpcAddImpl(), methodName, paramterTypes, arguments);
+//		ObjectOutputStream oos=new ObjectOutputStream(response.getOutputStream());
+//		oos.writeObject(o);
+//	}
 	
-	@RequestMapping(value="rpc")
+	@RequestMapping(value="add")
 	@ResponseBody
 	public int add(){
 		RpcAdd add=RpcClient.rpcRefer(RpcAdd.class);
