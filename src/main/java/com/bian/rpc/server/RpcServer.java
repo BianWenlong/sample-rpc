@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -59,17 +60,19 @@ public class RpcServer {
 			public void run() {
 				try {
 					ServerSocketChannel serverChannel=ServerSocketChannel.open();
+					serverChannel.bind(new InetSocketAddress(port));
 					Selector selector=Selector.open();
 					serverChannel.configureBlocking(false);
 					serverChannel.register(selector,SelectionKey.OP_ACCEPT,new ConnectHandler());
 					while(true){
 						selector.select();
-						Set<SelectionKey> keys=selector.keys();
+						Set<SelectionKey> keys=selector.selectedKeys();
 						Iterator<SelectionKey> it=keys.iterator();
 						while(it.hasNext()){
 							SelectionKey key=it.next();
 							Handler handler=(Handler)key.attachment();
 							handler.doService(key);
+							it.remove();
 						}
 					}
 				} catch (IOException e) {

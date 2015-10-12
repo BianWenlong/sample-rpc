@@ -15,6 +15,7 @@ public class ReadHandler implements Handler{
 	@Override
 	public void doService(SelectionKey key) {
 		SocketChannel sc=(SocketChannel) key.channel();
+		byte[] send=null;
 		try {
 			int num=sc.read(buffer);
 			if(num!=-1){
@@ -26,11 +27,14 @@ public class ReadHandler implements Handler{
 				buffer.get(receive, length, newLength);
 				length+=newLength;
 				buffer.clear();	
-			}else if(num==-1 || isReadEnd()){
-				byte[] send=RpcServer.doInvoke(receive);
-				sc.register(key.selector(), SelectionKey.OP_WRITE, new WriteHandler(send));
+				if(isReadEnd()){
+					send=RpcServer.doInvoke(receive);
+					sc.register(key.selector(), SelectionKey.OP_WRITE, new WriteHandler(send));
+				}else{
+					sc.register(key.selector(), SelectionKey.OP_WRITE, this);
+				}
 			}else{
-				sc.register(key.selector(), SelectionKey.OP_READ, this);
+				sc.register(key.selector(), SelectionKey.OP_WRITE, new WriteHandler(send));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

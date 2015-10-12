@@ -16,6 +16,7 @@ public class WriteHandler implements Handler{
 	public void doService(SelectionKey key) {
 		ByteBuffer sendBuffer=ByteBuffer.allocate(send.length);
 		sendBuffer.put(send);
+		sendBuffer.flip();
 		SocketChannel sc=(SocketChannel) key.channel();
 		try {
 			sc.write(sendBuffer);
