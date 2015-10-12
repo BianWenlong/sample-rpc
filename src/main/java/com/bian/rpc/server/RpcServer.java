@@ -1,12 +1,17 @@
 package com.bian.rpc.server;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -16,7 +21,24 @@ public class RpcServer {
 	private static final Logger logger = Logger.getLogger(RpcServer.class);
 
 	private static final int DEFAULT_PORT = 8888;
-
+	
+	public static final byte[] doInvoke(byte[] receives) throws IOException, ClassNotFoundException{
+		byte[] data=new byte[receives.length-4];
+		for(int i=0;i!=data.length;++i){
+			data[i]=receives[i+4];
+		}
+		InputStream in=new ByteArrayInputStream(data);
+		ByteArrayOutputStream bos=new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(bos);
+		ObjectInputStream ois=new ObjectInputStream(in);
+		String methodName=ois.readUTF();
+		Class[] paramtypes=(Class[]) ois.readObject();
+		Object[] arguments=(Object[]) ois.readObject();
+		Object result=rpcInvoke(new RpcAddImpl(),methodName,paramtypes,arguments);
+		oos.writeObject(result);
+		byte[] send=bos.toByteArray();
+		return send;
+	}
 	public static Object rpcInvoke(final Object service, String methodName,
 			Class<?>[] paramtypes, Object[] arguments) {
 		try {
@@ -36,27 +58,22 @@ public class RpcServer {
 			@Override
 			public void run() {
 				try {
-					final ServerSocket serverSocket = new ServerSocket(port);
-					while (true) {
-						Socket socket = serverSocket.accept();
-						if (socket == null) {
-							logger.error("连接错误");
-							continue;
+					ServerSocketChannel serverChannel=ServerSocketChannel.open();
+					Selector selector=Selector.open();
+					serverChannel.configureBlocking(false);
+					serverChannel.register(selector,SelectionKey.OP_ACCEPT,new ConnectHandler());
+					while(true){
+						selector.select();
+						Set<SelectionKey> keys=selector.keys();
+						Iterator<SelectionKey> it=keys.iterator();
+						while(it.hasNext()){
+							SelectionKey key=it.next();
+							Handler handler=(Handler)key.attachment();
+							handler.doService(key);
 						}
-						InputStream in = socket.getInputStream();
-						ObjectInputStream oin = new ObjectInputStream(in);
-						String methodName = oin.readUTF();
-						Class<?>[] paramterTypes = (Class<?>[]) oin
-								.readObject();
-						Object[] arguments = (Object[]) oin.readObject();
-						Object result = rpcInvoke(new RpcAddImpl(), methodName,
-								paramterTypes, arguments);
-						ObjectOutputStream oout = new ObjectOutputStream(socket
-								.getOutputStream());
-						oout.writeObject(result);
 					}
-				} catch (Exception e) {
-					logger.error("error"+e.getMessage());
+				} catch (IOException e) {
+					logger.error("网络错误"+e.getMessage());
 				}
 			}
 
